@@ -35,7 +35,7 @@ convert_to_grayscale = True  # 값을 변경하여 그레이스케일 옵션을 
 video_folder = "/home/siwon/dev/Deeplearning-6/data_video/video_cutting"  # 여기에 입력 비디오 폴더 경로를 입력하세요.
 output_folder = "/home/siwon/dev/Deeplearning-6/data_video/video_frame"       # 여기에 출력 프레임이 저장될 폴더 경로를 입력하세요.
 target_frame_count = 20         # 여기에 원하는 프레임 수를 입력하세요.
-new_size = (64, 64)           # 원하는 이미지 크기로 변경하세요.
+new_size = (128, 128)           # 원하는 이미지 크기로 변경하세요.
 
 for video_name in os.listdir(video_folder):
     if not is_video_file(video_name):
@@ -43,4 +43,4 @@ for video_name in os.listdir(video_folder):
 
     video_path = os.path.join(video_folder, video_name)
     video_output_folder = os.path.join(output_folder, os.path.splitext(video_name)[0])  # 비디오 파일 확장자 제거
-    extract_frames(video_path, video_output_folder, target_frame_count+1, new_size, convert_to_grayscale)
+    extract_frames(video_path, video_output_folder, target_frame_count, new_size, convert_to_grayscale)
