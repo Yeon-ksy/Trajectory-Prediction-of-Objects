@@ -27,8 +27,8 @@ def split_video(video_path, output_folder, num_clips):
 
     video.release()
 
-video_path = "/home/siwon/dev/Deeplearning-6/data_video/testvideo.mp4"       # 입력 비디오 파일 경로를 입력하세요.
+video_path = "/home/siwon/dev/Deeplearning-6/data_video/testvideo_number.mp4"       # 입력 비디오 파일 경로를 입력하세요.
 output_folder = "/home/siwon/dev/Deeplearning-6/data_video/video_frame"     # 출력 비디오 클립이 저장될 폴더 경로를 입력하세요.
-num_clips = 600                               # 원하는 클립 수를 입력하세요.
+num_clips = 200                               # 원하는 클립 수를 입력하세요.
 
 split_video(video_path, output_folder, num_clips)
