@@ -10,6 +10,8 @@ import csv
 
 cap = cv2.VideoCapture(0)
 
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 # 궤적 리스트
 position_list = []
 trajectory_list = []
@@ -17,7 +19,6 @@ append_on = False
 
 while True:
     # 프레임을 읽어옵니다.
-
     ret, frame = cap.read()
 
     # HSV 색공간으로 변환합니다.
@@ -50,25 +51,6 @@ while True:
         center_x = x + w//2
         center_y = y + h//2
 
-        '''
-        # 36X36 격자 모델
-        # 중심 좌표 x,y를 프레임에 출력합니다.
-        if center_x > 420 and center_x < 1500:
-            append_on = True
-
-            cv2.putText(frame, "x: " + str(center_x), (center_x + 10, center_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            cv2.putText(frame, "y: " + str(center_y), (center_x + 10, center_y + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-            print("mapping_x: " + str(math.ceil((center_x - 420) / 30)) + ", mapping_y: " + str(math.ceil(center_y / 30)))
-            position_list.append([math.ceil((center_x - 420) / 30), math.ceil(center_y / 30)])
-            # 궤적 그리기
-            for i in range(len(position_list)):
-                cv2.circle(frame, (position_list[i][0] * 30 + 420 - 15, position_list[i][1] * 30 - 15), 5, (0, 0, 255), -1)
-        else:
-            append_on = False
-            if len(position_list) > 0:
-                trajectory_list.append(position_list)
-                position_list = []
-        '''
         
         # 72X72 격자 모델
         # 중심 좌표 x,y를 프레임에 출력합니다.
@@ -88,15 +70,6 @@ while True:
                 trajectory_list.append(position_list)
                 position_list = []
 
-    '''
-    # 36X36 격자 모델
-    # 격자 무늬를 출력합니다.
-    for i in range(420, 1530, 30):
-        cv2.line(frame, (i, 0), (i, 1080), (255, 0, 0), 1)
-    for i in range(0, 1110, 30):
-         cv2.line(frame, (420, i), (1500, i), (255, 0, 0), 1)
-    '''
-
     # 72X72 격자 모델
     # 격자 무늬를 출력합니다.
     for i in range(420, 1515, 15):
@@ -112,12 +85,6 @@ while True:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         print(trajectory_list)
         print('dataset 개수 : '+len(trajectory_list))
-
-        # csv 파일로 저장
-        with open('data/trajectory_dataset.csv', 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(trajectory_list)
-
         break
 
 cap.release()
