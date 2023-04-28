@@ -20,7 +20,7 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 t=0
-
+balls_data = []
 
 # 쓰레드 클래스 정의
 class FrameProcessingThread(threading.Thread):
@@ -48,6 +48,7 @@ def predict_next_positions(model, input_data, num_steps):
 
 def process_frame(frame, position_list, model):
     global t
+    global balls_data
     # HSV 색공간으로 변환합니다.
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     # 주황색 범위를 정의합니다.
@@ -64,10 +65,16 @@ def process_frame(frame, position_list, model):
     # 주황색 영역을 바탕으로 객체의 윤곽선을 추출합니다.
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
-    # 가장 큰 윤곽선을 추출합니다.
-    if len(contours) > 0:
-        c = max(contours, key=cv2.contourArea)
-        
+    # 넓이별로 윤곽선을 정렬합니다.
+    sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+    min_area = 100
+    max_area = 1000
+    # 넓이와 높이가 특정 범위인 윤곽선을 모두 선택합니다.
+    valid_contours = [c for c in sorted_contours if cv2.contourArea(c) > min_area and cv2.contourArea(c) < max_area]
+    print("valid_contours: ", valid_contours)
+    # 각 윤곽선에 대해 처리를 수행합니다.
+    for c in valid_contours:
+
         # 윤곽선을 둘러싸는 사각형을 그립니다.
         x,y,w,h = cv2.boundingRect(c)
         cv2.rectangle(frame, (x,y), (x+w,y+h), (0,255,0), 2)
@@ -97,8 +104,20 @@ def process_frame(frame, position_list, model):
                 print("predict_result: ", predict_result)
                 ## marker predict
                 for i in range(len(predict_result)):
-                    cv2.circle(frame, ((15*(round(predict_result[i][0])))+420, 15*(round(predict_result[i][1]))), 10, (0, 0, 255), -1)
-                
+                # 원본 이미지의 복사본을 만듭니다.
+                    overlay = frame.copy()
+
+                    # 반지름을 계산합니다. (너비와 높이의 평균을 사용)
+                    radius = int((w + h) / 4)
+
+                    # 복사본에 주황색 원을 그립니다. 여기서 radius를 반지름으로 사용합니다.
+                    cv2.circle(overlay, ((15*(round(predict_result[i][0])))+420, 15*(round(predict_result[i][1]))), radius, (0, 140, 255), -1)
+
+                    # 원본 이미지와 복사본을 합칩니다. 여기서 1 - i/len(predict_result)는 각 원의 투명도를 조절하는 가중치입니다.
+                    alpha = 1 - i/len(predict_result)
+                    cv2.addWeighted(overlay, alpha, frame, 1-alpha, 0, frame)
+
+
         else:
             if len(position_list) > 0:
                 position_list.clear()
@@ -128,6 +147,7 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 # 궤적 리스트
 position_list = deque(maxlen=5)
+
 trajectory_list = []
 append_on = False
 

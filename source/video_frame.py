@@ -20,7 +20,7 @@ def extract_frames(video_path, output_folder, target_frame_count, new_size, conv
             resized_frame = cv2.resize(frame, new_size, interpolation=cv2.INTER_AREA)
             if convert_to_grayscale:
                 resized_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
-            frame_name = os.path.join(output_folder, f"frame{success_count+1}.jpg")
+            frame_name = os.path.join(output_folder, f"frame{idx+1:03d}.jpg")
             cv2.imwrite(frame_name, resized_frame)
             success_count += 1
         else:
@@ -31,11 +31,11 @@ def is_video_file(file_name):
     _, ext = os.path.splitext(file_name)
     return ext.lower() in video_exts
 
-convert_to_grayscale = True  # 값을 변경하여 그레이스케일 옵션을 설정하세요.
-video_folder = "/home/siwon/dev/Deeplearning-6/data_video/video_frame"  # 여기에 입력 비디오 폴더 경로를 입력하세요.
-output_folder = "/home/siwon/dev/Deeplearning-6/data_video/video_frame_number"       # 여기에 출력 프레임이 저장될 폴더 경로를 입력하세요.
+convert_to_grayscale = False  # 값을 변경하여 그레이스케일 옵션을 설정하세요.
+video_folder = "/home/siwon/dev/Deeplearning-6/data_video/frame_ball_color"  # 여기에 입력 비디오 폴더 경로를 입력하세요.
+output_folder = "/home/siwon/dev/Deeplearning-6/data_video/video_frame_ball_color"       # 여기에 출력 프레임이 저장될 폴더 경로를 입력하세요.
 target_frame_count = 20         # 여기에 원하는 프레임 수를 입력하세요.
-new_size = (64, 64)           # 원하는 이미지 크기로 변경하세요.
+new_size = (32, 32)           # 원하는 이미지 크기로 변경하세요.
 
 for video_name in os.listdir(video_folder):
     if not is_video_file(video_name):
