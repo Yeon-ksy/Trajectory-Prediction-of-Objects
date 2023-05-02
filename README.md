@@ -1,2 +1,2 @@
-# Deeplearning-6
+# deeplearning-repo-6
 Trajectory prediction for avoidance driving
