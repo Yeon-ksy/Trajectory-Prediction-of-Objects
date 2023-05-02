@@ -93,7 +93,7 @@ def process_frame(frame, position_list_orange, position_list_red, model):
             center_x = x + w//2
             center_y = y + h//2
             position_list_orange,t_orange = return_position_list_orange(frame, position_list_orange, model, w, center_x, center_y,t_orange)
-            print('orange'+str(position_list_orange))
+            # print('orange'+str(position_list_orange))
     # 빨간색 윤곽선 추출
     contours_red, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # 가장 큰 빨간색 윤곽선을 추출합니다.
@@ -106,7 +106,7 @@ def process_frame(frame, position_list_orange, position_list_red, model):
             center_x = x + w//2
             center_y = y + h//2
             position_list_red,t_red = return_position_list_red(frame, position_list_red, model, w, center_x, center_y,t_red)
-            print('red'+str(position_list_red))
+            # print('red'+str(position_list_red))
     # 격자 무늬를 출력합니다.
     for i in range(420, 1515, 15):
         cv2.line(frame, (i, 0), (i, 1080), (255, 0, 0), 1)
@@ -125,9 +125,9 @@ def return_position_list_orange(frame, position_list_orange, model, w, center_x,
         position_list_orange.append(new_position)
         t_orange= t_orange+1
         # model predict
-        if len(position_list_orange) == 5:
+        if len(position_list_orange) == 10:
             predict_data = np.array(position_list_orange)
-            predict_data = predict_data.reshape(1, 5, 3)
+            predict_data = predict_data.reshape(1, 10, 3)
             predict_result = predict_next_positions_orange(model, predict_data, 10)
             # marker predict
             for i in range(len(predict_result)-1):
@@ -147,7 +147,7 @@ def return_position_list_orange(frame, position_list_orange, model, w, center_x,
     else:
         if len(position_list_orange) > 0:
             trajectory_list.append(position_list_orange)
-            position_list_orange = deque(maxlen=5)
+            position_list_orange = deque(maxlen=10)
             t_orange = 0
     if t_orange > 50:
         position_list_orange.clear()
@@ -163,9 +163,9 @@ def return_position_list_red(frame, position_list_red, model, w, center_x, cente
         position_list_red.append(new_position)
         t_red= t_red+1
         # model predict
-        if len(position_list_red) == 5:
+        if len(position_list_red) == 10:
             predict_data = np.array(position_list_red)
-            predict_data = predict_data.reshape(1, 5, 3)
+            predict_data = predict_data.reshape(1, 10, 3)
             predict_result = predict_next_positions_red(model, predict_data, 10)
             # marker predict
             for i in range(len(predict_result)-1):
@@ -185,7 +185,7 @@ def return_position_list_red(frame, position_list_red, model, w, center_x, cente
     else:
         if len(position_list_red) > 0:
             trajectory_list.append(position_list_red)
-            position_list_red = deque(maxlen=5)
+            position_list_red = deque(maxlen=10)
             t_red = 0
     if t_red > 50:
         position_list_red.clear()
@@ -193,14 +193,40 @@ def return_position_list_red(frame, position_list_red, model, w, center_x, cente
     return position_list_red,t_red
 
 # 모델을 불러옵니다.
-model = keras.models.load_model('/home/siwon/dev/Deeplearning-6/model/first_model.h5', compile=False)
+# model = keras.models.load_model('/home/siwon/dev/Deeplearning-6/model/second_model.h5', compile=False)
+
+## model load
+from keras.models import load_model
+
+def weighted_mse_loss(y_true, y_pred):
+    mse = tf.keras.losses.MeanSquaredError()
+    loss = mse(y_true, y_pred)
+    
+    # 벽에 가까운 좌표에 대한 가중치 설정
+    wall_threshold = 5  # 이 값은 벽에 가까운 좌표를 정의하는 데 사용되며, 사용자가 조정할 수 있습니다.
+    weights = tf.where(
+        tf.logical_or(
+            tf.less(y_true[:, :2], wall_threshold),
+            tf.greater(y_true[:, :2], 72 - wall_threshold)
+        ),
+        2.0,  # 벽에 가까운 좌표에 대한 가중치
+        1.0   # 그 외의 좌표에 대한 가중치
+    )
+    
+    # 가중치를 적용한 손실 값을 계산
+    weighted_loss = tf.multiply(loss, weights)
+    
+    return tf.reduce_mean(weighted_loss)
+
+model = load_model('/home/siwon/dev/Deeplearning-6/model/GRU_model.h5', custom_objects={'weighted_mse_loss': weighted_mse_loss})
+
 # video load
 cap = cv2.VideoCapture('/home/siwon/dev/Deeplearning-6/data_video/coorvideo.mp4')
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 # 궤적 리스트
-position_list_orange = deque(maxlen=5)
-position_list_red = deque(maxlen=5)
+position_list_orange = deque(maxlen=10)
+position_list_red = deque(maxlen=10)
 trajectory_list = []
 pts_x = []
 pts_y = []
