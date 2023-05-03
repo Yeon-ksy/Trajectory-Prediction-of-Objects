@@ -15,11 +15,6 @@ import queue
 import os
 import logging
 import tensorflow as tf
-
-logging.getLogger("tensorflow").setLevel(logging.WARNING)
-
-
-import tensorflow as tf
 # 쓰레드 클래스 정의
 class FrameProcessingThread(threading.Thread):
     def __init__(self, *args, **kwargs):
@@ -27,7 +22,6 @@ class FrameProcessingThread(threading.Thread):
         self.result = None
     def run(self):
         self.result = self._target(*self._args, **self._kwargs)
-        
 # 주어진 입력 데이터에서 연속적으로 다음 위치 예측 함수
 def predict_next_positions_orange(model, input_data, num_steps):
     current_input = input_data.copy()
@@ -39,7 +33,6 @@ def predict_next_positions_orange(model, input_data, num_steps):
         new_input = np.concatenate((current_input[:, 1:, :], predicted.reshape(1, 1, -1)), axis=1)
         current_input = new_input
     return np.array(predicted_positions)
-
 # 주어진 입력 데이터에서 연속적으로 다음 위치 예측 함수
 def predict_next_positions_red(model, input_data, num_steps):
     current_input = input_data.copy()
@@ -51,35 +44,34 @@ def predict_next_positions_red(model, input_data, num_steps):
         new_input = np.concatenate((current_input[:, 1:, :], predicted.reshape(1, 1, -1)), axis=1)
         current_input = new_input
     return np.array(predicted_positions)
-
 def process_frame(frame, position_list_orange, position_list_red, model):
     global t_red
     global t_orange
     global balls_data
-    # HSV 색공간으로 변환합니다.
+    # HSV 색공간으로 변환
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # 주황색 범위를 정의합니다.
+    # 주황색 범위를 정의
     # lower_orange = np.array([5, 200, 200])
-    lower_orange = np.array([20, 100, 100])
     # upper_orange = np.array([15, 255, 255])
+    lower_orange = np.array([20, 100, 100])
     upper_orange = np.array([30, 255, 255])
-    # 빨간색 범위를 정의합니다.
-    lower_red = np.array([5, 50, 50])
-    upper_red = np.array([15, 255, 255])
+    # 빨간색 범위를 정의
     # lower_red = np.array([0, 50, 50])
     # upper_red = np.array([3, 255, 255])
-    # 주황색 영역을 마스크로 만듭니다.
+    lower_red = np.array([5, 50, 50])
+    upper_red = np.array([15, 255, 255])
+    # 주황색 영역을 마스크
     mask_orange = cv2.inRange(hsv, lower_orange, upper_orange)
-    # 빨간색 영역을 마스크로 만듭니다.
+    # 빨간색 영역을 마스크
     mask_red = cv2.inRange(hsv, lower_red, upper_red)
-    # 모폴로지 연산을 사용하여 마스크를 개선합니다.
+    # 모폴로지 연산을 사용하여 마스크 개선
     kernel = np.ones((5,5),np.uint8)
     mask_orange = cv2.erode(mask_orange, kernel)
     mask_orange = cv2.dilate(mask_orange, kernel)
-    # 모폴로지 연산을 사용하여 마스크를 개선합니다.
+    # 모폴로지 연산을 사용하여 마스크 개선
     mask_red = cv2.erode(mask_red, kernel)
     mask_red = cv2.dilate(mask_red, kernel)
-    # 최소 윤곽선 면적을 설정합니다.
+    # 윤곽선의 최소 면적을 설정
     min_area = 2000
     # 주황색 윤곽선 추출
     contours_orange, _ = cv2.findContours(mask_orange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -96,7 +88,7 @@ def process_frame(frame, position_list_orange, position_list_red, model):
             print('orange'+str(position_list_orange))
     # 빨간색 윤곽선 추출
     contours_red, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # 가장 큰 빨간색 윤곽선을 추출합니다.
+    # 가장 큰 빨간색 윤곽선을 추출
     if len(contours_red) > 0:
         c = max(contours_red, key=cv2.contourArea)
         area = cv2.contourArea(c)
@@ -107,27 +99,30 @@ def process_frame(frame, position_list_orange, position_list_red, model):
             center_y = y + h//2
             position_list_red,t_red = return_position_list_red(frame, position_list_red, model, w, center_x, center_y,t_red)
             print('red'+str(position_list_red))
-    # 격자 무늬를 출력합니다.
+    # 격자 무늬를 출력
     for i in range(420, 1515, 15):
         cv2.line(frame, (i, 0), (i, 1080), (255, 0, 0), 1)
     for i in range(0, 1095, 15):
         cv2.line(frame, (420, i), (1500, i), (255, 0, 0), 1)
-    # 사각형 그리기
-    cv2.rectangle(frame, (420, 0), (1500, 1080), (0, 255, 0), 2)
+    # 사각형 그리기(측정 영역, 관심 영역)
+    # 측정 영역
+    cv2.rectangle(frame, (420, 0), (1500, 1080), (0, 255, 0), 3)
+    # 관심 영역
+    cv2.rectangle(frame, (520, 100), (1400, 980), (0, 255, 255), 3)
     return frame
-
+# 주황공 예측
 def return_position_list_orange(frame, position_list_orange, model, w, center_x, center_y,t_orange):
     if center_x > 420 and center_x < 1500:
         cv2.putText(frame, "x: " + str(center_x), (center_x + 10, center_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 4)
         cv2.putText(frame, "y: " + str(center_y), (center_x + 10, center_y + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 4)
         new_position = [math.ceil((center_x - 420) / 15), math.ceil(center_y / 15)]
         t_orange_t = 0
-        if t_orange % 3 == 0:
-            t_orange_t = t_orange/3
+        if t_orange % 2 == 0:
+            t_orange_t = t_orange / 2
             new_position.append(int(t_orange_t))
             position_list_orange.append(new_position)
         t_orange += 1
-        # model predict
+        # 모델 예측
         if len(position_list_orange) == 5:
             predict_data = np.array(position_list_orange)
             predict_data = predict_data.reshape(1, 5, 3)
@@ -142,7 +137,8 @@ def return_position_list_orange(frame, position_list_orange, model, w, center_x,
             for i in range(0, len(pts_xy), 2):
                 start_point = pts_xy[i]
                 end_point = pts_xy[i+1]
-                cv2.line(overlay, start_point, end_point, (0, 255, 255), thickness=int(w/2))
+                if center_x > 520 and center_x < 1400 and center_y > 100 and center_y < 980:
+                    cv2.line(overlay, start_point, end_point, (0, 255, 255), thickness=int(w/3))
                 # cv2.circle(overlay, end_point, 15, (0, 0, 255), -1)
             alpha = 0.5
             cv2.addWeighted(overlay, alpha, frame, 1-alpha, 0, frame)
@@ -156,19 +152,19 @@ def return_position_list_orange(frame, position_list_orange, model, w, center_x,
         position_list_orange.clear()
         t_orange = 0
     return position_list_orange,t_orange
-
+# 빨간공 예측
 def return_position_list_red(frame, position_list_red, model, w, center_x, center_y,t_red):
     if center_x > 420 and center_x < 1500:
         cv2.putText(frame, "x: " + str(center_x), (center_x + 10, center_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 4)
         cv2.putText(frame, "y: " + str(center_y), (center_x + 10, center_y + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 4)
         new_position = [math.ceil((center_x - 420) / 15), math.ceil(center_y / 15)]
         t_red_t = 0
-        if t_red % 3 == 0:
-            t_red_t = t_red/3
+        if t_red % 2 == 0:
+            t_red_t = t_red/2
             new_position.append(int(t_red_t))
             position_list_red.append(new_position)
         t_red = t_red + 1
-        # model predict
+        # 모델 예측
         if len(position_list_red) == 5:
             predict_data = np.array(position_list_red)
             predict_data = predict_data.reshape(1, 5, 3)
@@ -183,7 +179,8 @@ def return_position_list_red(frame, position_list_red, model, w, center_x, cente
             for i in range(0, len(pts_xy), 2):
                 start_point = pts_xy[i]
                 end_point = pts_xy[i+1]
-                cv2.line(overlay, start_point, end_point, (0, 255, 255), thickness=int(w/2))
+                if center_x > 520 and center_x < 1400 and center_y > 100 and center_y < 980:
+                    cv2.line(overlay, start_point, end_point, (0, 255, 255), thickness=int(w/3))
                 # cv2.circle(overlay, end_point, 15, (0, 0, 255), -1)
             alpha = 0.5
             cv2.addWeighted(overlay, alpha, frame, 1-alpha, 0, frame)
@@ -197,39 +194,10 @@ def return_position_list_red(frame, position_list_red, model, w, center_x, cente
         position_list_red.clear()
         t_red = 0
     return position_list_red,t_red
-
-# 모델을 불러옵니다.
+# 모델 로드
 model = keras.models.load_model('/home/siwon/dev/Deeplearning-6/model/first_model.h5', compile=False)
-
-## model load
-#from keras.models import load_model
-#
-#def weighted_mse_loss(y_true, y_pred):
-#    mse = tf.keras.losses.MeanSquaredError()
-#    loss = mse(y_true, y_pred)
-#    
-#    # 벽에 가까운 좌표에 대한 가중치 설정
-#    wall_threshold = 5  # 이 값은 벽에 가까운 좌표를 정의하는 데 사용되며, 사용자가 조정할 수 있습니다.
-#    weights = tf.where(
-#        tf.logical_or(
-#            tf.less(y_true[:, :2], wall_threshold),
-#            tf.greater(y_true[:, :2], 72 - wall_threshold)
-#        ),
-#        2.0,  # 벽에 가까운 좌표에 대한 가중치
-#        1.0   # 그 외의 좌표에 대한 가중치
-#    )
-#    
-#    # 가중치를 적용한 손실 값을 계산
-#    weighted_loss = tf.multiply(loss, weights)
-#    
-#    return tf.reduce_mean(weighted_loss)
-#
-#model = load_model('/home/siwon/dev/Deeplearning-6/model/GRU_model.h5', custom_objects={'weighted_mse_loss': weighted_mse_loss})
-
-# video load
-cap = cv2.VideoCapture('/home/siwon/dev/Deeplearning-6/data_video/coorvideo.mp4')
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+# 카메라 입력
+cap = cv2.VideoCapture("/home/siwon/dev/Deeplearning-6/data_video/coorvideo.mp4")
 # 궤적 리스트
 position_list_orange = deque(maxlen=5)
 position_list_red = deque(maxlen=5)
@@ -240,10 +208,9 @@ pts_xy = []
 t_red=0
 t_orange=0
 balls_data = []
-
 # 메인 루프
 while True:
-    # 프레임을 읽어옵니다.
+    # 프레임을 읽어옴
     ret, frame = cap.read()
     frame_processing_thread = FrameProcessingThread(target=process_frame, args=(frame, position_list_orange, position_list_red , model))
     frame_processing_thread.start()
