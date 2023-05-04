@@ -195,9 +195,10 @@ def return_position_list_red(frame, position_list_red, model, w, center_x, cente
         t_red = 0
     return position_list_red,t_red
 # 모델 로드
-model = keras.models.load_model('/home/siwon/dev/Deeplearning-6/model/first_model.h5', compile=False)
+model = keras.models.load_model('/Users/kks/Documents/one_day_project/ball_trajectory_prediction/data/first_model.h5', compile=False)
 # 카메라 입력
-cap = cv2.VideoCapture("/home/siwon/dev/Deeplearning-6/data_video/coorvideo.mp4")
+# cap = cv2.VideoCapture(0)
+cap  = cv2.VideoCapture('/Users/kks/Documents/one_day_project/ball_trajectory_prediction/data/IMG_9171 2.MOV')
 # 궤적 리스트
 position_list_orange = deque(maxlen=5)
 position_list_red = deque(maxlen=5)
