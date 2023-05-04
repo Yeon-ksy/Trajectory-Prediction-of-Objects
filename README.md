@@ -30,7 +30,7 @@ openCV 4.7.0
 
 ---
 ## Introduce
-Hi We carried out this project assuming the LIDAR situation as a deep learning project. We first show trajectory predictions for the ball and then use Carla Simulator to predict trajectories for the car.
+Hi! We carried out this project assuming the LIDAR situation as a deep learning project. We first show trajectory predictions for the ball and then use Carla Simulator to predict trajectories for the car.
 
 ---
 
