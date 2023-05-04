@@ -2,5 +2,7 @@
 *.mp4
 *.jpg
 *.gif
-*.csv
+
 *.png
+*.csv
+*.json
